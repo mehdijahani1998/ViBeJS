@@ -1,26 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>D3 Library Dev Mode</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D3 Library Dev Mode</title>
 </head>
 <body>
-    <div id="chart"></div>
-    <div id="chart2"></div>
-    <script src="bundle.js"></script> <!-- This is the Webpack bundle -->
-    <script>
-        // Test the D3 library here
+  <div id="chart"></div>
+  <div id="chart2"></div>
+  <script src="bundle.js"></script>
+  <script type="module">
+    import { Vibe } from "./bundle.js";
 
-        const xDomain = ["Trump", "Kamala","Kennedy"];
-        const yDomain = [0, 1000];
-        const width = 600;
-        const height = 400;
-        const margins = { top: 20, right: 20, bottom: 20, left: 60 };
-        const svg = new Vibe.barX(xDomain,yDomain,width,height,margins).create();
-        const svg2 = new Vibe.barY(yDomain,xDomain,width,height,margins).create();
-        document.getElementById('chart').appendChild(svg);
-        document.getElementById('chart2').appendChild(svg2);
-    </script>
+    const xDomain = ["Trump", "Kamala", "Kennedy"];
+    const yDomain = [0, 1000];
+    const width = 600;
+    const height = 400;
+    const margins = { top: 20, right: 20, bottom: 40, left: 60 };
+
+    const svg1 = new Vibe.barX(xDomain, yDomain, width, height, margins).create();
+    const svg2 = new Vibe.barY(yDomain, xDomain, width, height, margins).create();
+
+    document.getElementById('chart').appendChild(svg1);
+    document.getElementById('chart2').appendChild(svg2);
+  </script>
 </body>
 </html>
