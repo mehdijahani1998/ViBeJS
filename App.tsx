@@ -63,7 +63,7 @@ const App: React.FC = () => {
         <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-teal-300">
           VibeJS
         </h1>
-        <a href="https://github.com/google/prompt-gallery/tree/main/prototypes/interactive-chart-builder" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
+        <a href="https://github.com/mehdijahani1998/ViBeJS" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
           <GithubIcon className="w-8 h-8" />
         </a>
       </header>
