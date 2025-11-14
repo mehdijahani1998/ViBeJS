@@ -1,5 +1,5 @@
 {
-  "name": "Interactive Chart Builder",
-  "description": "A tool to visually create horizontal or vertical bar charts by drawing the bars. Once created, you can generate the corresponding dataset and get an AI-powered analysis of your visualization.",
+  "name": "ViBeJS Chart Creater",
+  "description": "A tool to visually create visualizations on the go. Once created, you can generate the corresponding dataset and get an AI-powered analysis of your visualization.",
   "requestFramePermissions": []
 }

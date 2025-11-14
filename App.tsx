@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import Welcome from './components/Welcome';
 import ConfigForm from './components/ConfigForm';
@@ -58,12 +59,12 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 flex flex-col items-center justify-center p-4 font-sans">
-      <header className="w-full max-w-5xl mx-auto flex justify-between items-center p-4 text-white">
-        <h1 className="text-2xl md:text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-teal-300">
+    <div className="min-h-screen bg-[#23395d] text-[#fdfdfd] flex flex-col items-center justify-center p-4 font-sans">
+      <header className="w-full max-w-5xl mx-auto flex justify-between items-center p-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-[#f9dc5c]">
           VibeJS
         </h1>
-        <a href="https://github.com/mehdijahani1998/ViBeJS" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
+        <a href="https://github.com/mehdijahani1998/ViBeJS" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-[#fdfdfd] transition-colors">
           <GithubIcon className="w-8 h-8" />
         </a>
       </header>

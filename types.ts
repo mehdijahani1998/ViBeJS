@@ -12,4 +12,6 @@ export interface ChartConfig {
   labels: string[];
   maxValue: number;
   totalSumLimit?: number;
+  xAxisLabel: string;
+  yAxisLabel: string;
 }

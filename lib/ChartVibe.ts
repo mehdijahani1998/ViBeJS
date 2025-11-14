@@ -1,9 +1,11 @@
 import * as d3 from 'd3';
 import { ChartDataItem, ChartType } from '../types';
 
-// Fix: Augment the D3 Selection interface to include our custom `attr_all` method.
-declare module 'd3-selection' {
-  interface Selection<GElement extends d3.BaseType, Datum, PElement extends d3.BaseType, PDatum> {
+// Fix: Augment the D3 Selection interface by targeting the main 'd3' module.
+// When using the monolithic 'd3' bundle, augmentations should target 'd3'
+// to ensure type resolution works correctly. BaseType is also exported from 'd3'.
+declare module 'd3' {
+  interface Selection<GElement extends BaseType, Datum, PElement extends BaseType, PDatum> {
     attr_all(obj: {[key: string]: any}): this;
   }
 }
@@ -15,10 +17,12 @@ interface ChartVibeProps {
   totalSumLimit?: number;
   width: number;
   height: number;
+  xAxisLabel: string;
+  yAxisLabel: string;
   onSumUpdate: (sum: number) => void;
 }
 
-const margin = { top: 20, right: 30, bottom: 50, left: 60 };
+const margin = { top: 20, right: 30, bottom: 60, left: 70 };
 
 export class ChartVibe {
   private props: ChartVibeProps;
@@ -68,14 +72,56 @@ export class ChartVibe {
 
   private createAxis(): void {
     if (this.props.type === ChartType.VERTICAL) {
-      this.g.append("g").attr("class", "axis x-axis").attr("transform", `translate(0,${this.height})`).call(d3.axisBottom(this.xScale as d3.AxisScale<string>));
-      this.g.append("g").attr("class", "axis y-axis").call(d3.axisLeft(this.yScale as d3.AxisScale<number>));
+      this.g.append("g").attr("class", "axis x-axis").attr("transform", `translate(0,${this.height})`).call(d3.axisBottom(this.xScale as d3.AxisScale<string>).tickSize(0).tickPadding(10));
+      this.g.append("g").attr("class", "axis y-axis").call(d3.axisLeft(this.yScale as d3.AxisScale<number>).tickSize(0).tickPadding(10));
     } else {
-      this.g.append("g").attr("class", "axis x-axis").attr("transform", `translate(0,${this.height})`).call(d3.axisBottom(this.xScale as d3.AxisScale<number>));
-      this.g.append("g").attr("class", "axis y-axis").call(d3.axisLeft(this.yScale as d3.AxisScale<string>));
+      this.g.append("g").attr("class", "axis x-axis").attr("transform", `translate(0,${this.height})`).call(d3.axisBottom(this.xScale as d3.AxisScale<number>).tickSize(0).tickPadding(10));
+      this.g.append("g").attr("class", "axis y-axis").call(d3.axisLeft(this.yScale as d3.AxisScale<string>).tickSize(0).tickPadding(10));
     }
-    this.svg.selectAll(".axis path, .axis line").attr("stroke", "#4A5568");
-    this.svg.selectAll(".axis text").attr("fill", "#A0AEC0");
+    this.svg.selectAll(".axis path").attr("stroke", "none");
+    this.svg.selectAll(".axis text").attr("fill", "#fdfdfd").attr("fill-opacity", 0.7);
+
+    // Add grid lines
+    this.g.insert('g', ':first-child')
+        .attr('class', 'grid-lines')
+        .call(this.createGridLines.bind(this));
+
+    this.svg.selectAll(".grid-lines path, .grid-lines line")
+        .attr("stroke", "#fdfdfd")
+        .attr("stroke-opacity", 0.1);
+
+    // Add X axis label:
+    if (this.props.xAxisLabel) {
+        this.g.append("text")
+            .attr("text-anchor", "middle")
+            .attr("x", this.width / 2)
+            .attr("y", this.height + margin.bottom - 20)
+            .attr("fill", "#fdfdfd").attr("fill-opacity", 0.8)
+            .style("font-size", "14px")
+            .text(this.props.xAxisLabel);
+    }
+    
+    // Y axis label:
+    if (this.props.yAxisLabel) {
+        this.g.append("text")
+            .attr("text-anchor", "middle")
+            .attr("transform", "rotate(-90)")
+            .attr("y", -margin.left + 20)
+            .attr("x", -this.height / 2)
+            .attr("fill", "#fdfdfd").attr("fill-opacity", 0.8)
+            .style("font-size", "14px")
+            .text(this.props.yAxisLabel);
+    }
+  }
+
+  private createGridLines(): d3.Axis<d3.NumberValue> {
+    const scale = this.props.type === ChartType.VERTICAL ? this.yScale : this.xScale;
+    const size = this.props.type === ChartType.VERTICAL ? -this.width : -this.height;
+    const axisGenerator = this.props.type === ChartType.VERTICAL ? d3.axisLeft : d3.axisBottom;
+
+    return axisGenerator(scale as d3.ScaleLinear<number, number>)
+        .tickSize(size)
+        .tickFormat(() => '');
   }
 
   private addMarks(): void {
@@ -95,13 +141,13 @@ export class ChartVibe {
             .attr("y", d => d.value > 0 ? scaleY(d.value) : scaleY(0))
             .attr("width", scaleX.bandwidth())
             .attr("height", d => Math.abs(scaleY(d.value) - scaleY(0)))
-            .attr("class", "fill-teal-400 transition-all duration-150");
+            .attr("class", "fill-[#668a55] transition-all duration-150");
 
         bars.append("text")
             .attr("x", d => scaleX(d.label)! + scaleX.bandwidth() / 2)
             .attr("y", d => scaleY(d.value) - 5)
             .attr("text-anchor", "middle")
-            .attr("class", "fill-white font-semibold text-xs pointer-events-none")
+            .attr("class", "fill-[#fdfdfd] font-semibold text-xs pointer-events-none")
             .text(d => d.value > 0 ? d.value.toLocaleString() : '');
     } else {
         const scaleX = this.xScale as d3.ScaleLinear<number, number>;
@@ -111,13 +157,13 @@ export class ChartVibe {
             .attr("y", d => scaleY(d.label)!)
             .attr("width", d => d.value > 0 ? scaleX(d.value) : 0)
             .attr("height", scaleY.bandwidth())
-            .attr("class", "fill-teal-400 transition-all duration-150");
+            .attr("class", "fill-[#668a55] transition-all duration-150");
 
         bars.append("text")
             .attr("x", d => scaleX(d.value) + 5)
             .attr("y", d => scaleY(d.label)! + scaleY.bandwidth() / 2)
             .attr("dominant-baseline", "middle")
-            .attr("class", "fill-white font-semibold text-xs pointer-events-none")
+            .attr("class", "fill-[#fdfdfd] font-semibold text-xs pointer-events-none")
             .text(d => d.value > 0 ? d.value.toLocaleString() : '');
     }
   }
@@ -148,7 +194,7 @@ export class ChartVibe {
             height: scaleY.bandwidth(),
         };
     }
-    this.highlightG.append("rect").attr("class", "fill-gray-500/50 pointer-events-none").attr_all(barProps);
+    this.highlightG.append("rect").attr("class", "fill-[#fdfdfd]/10 pointer-events-none").attr_all(barProps);
   }
 
   private getBarDataFromPointer(event: MouseEvent): { label: string; value: number } | null {
