@@ -2,14 +2,25 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ChartDataItem, ChartType } from '../types';
 
-const API_KEY = process.env.API_KEY;
+// Read the Gemini API key from Vite environment variables.
 
-if (!API_KEY) {
-  // A check to ensure the API key is available, though the environment should provide it.
-  console.warn("Gemini API key not found in environment variables.");
-}
+
+
+// Vite only exposes env vars prefixed with `VITE_` to the client bundle.
+
+
+// We also check `VITE_API_KEY` as a common alternative.
+
+
+const API_KEY = (import.meta.env as any).VITE_GEMINI_API_KEY || (import.meta.env as any).VITE_API_KEY || "";
 
 const ai = new GoogleGenAI({ apiKey: API_KEY! });
+
+if (!API_KEY) {
+
+  console.warn("Gemini API key not found. Set VITE_GEMINI_API_KEY in your .env.local for local development.");
+
+}
 
 const analysisSchema = {
   type: Type.OBJECT,
