@@ -4,7 +4,8 @@ import Welcome from './components/Welcome';
 import ConfigForm from './components/ConfigForm';
 import ChartBuilder from './components/ChartBuilder';
 import DatasetDisplay from './components/DatasetDisplay';
-import { ChartType, ChartDataItem, ChartConfig } from './types';
+// FIX: Removed unused imports to resolve the module export error.
+import { ChartType, ChartConfig, ChartData } from './types';
 import { GithubIcon } from './components/Icons';
 
 type AppState = 'welcome' | 'config' | 'build' | 'dataset';
@@ -13,7 +14,7 @@ const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>('welcome');
   const [chartType, setChartType] = useState<ChartType | null>(null);
   const [chartConfig, setChartConfig] = useState<ChartConfig | null>(null);
-  const [chartData, setChartData] = useState<ChartDataItem[] | null>(null);
+  const [chartData, setChartData] = useState<ChartData | null>(null);
 
   const handleTypeSelect = useCallback((type: ChartType) => {
     setChartType(type);
@@ -25,7 +26,7 @@ const App: React.FC = () => {
     setAppState('build');
   }, []);
   
-  const handleBuildComplete = useCallback((data: ChartDataItem[]) => {
+  const handleBuildComplete = useCallback((data: ChartData) => {
     setChartData(data);
     setAppState('dataset');
   }, []);
@@ -49,7 +50,7 @@ const App: React.FC = () => {
       case 'config':
         return chartType && <ConfigForm chartType={chartType} onConfigSubmit={handleConfigSubmit} onBack={() => setAppState('welcome')} />;
       case 'build':
-        return chartConfig && chartType && <ChartBuilder {...chartConfig} type={chartType} onComplete={handleBuildComplete} onBack={handleBackToConfig} />;
+        return chartConfig && chartType && <ChartBuilder config={chartConfig} type={chartType} onComplete={handleBuildComplete} onBack={handleBackToConfig} />;
       case 'dataset':
         return chartData && chartConfig && chartType && <DatasetDisplay data={chartData} config={chartConfig} type={chartType} onReset={handleReset} />;
       case 'welcome':

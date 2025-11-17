@@ -1,11 +1,12 @@
 
 import React, { useState, useCallback } from 'react';
-import { ChartDataItem, ChartType, ChartConfig } from '../types';
+// FIX: Replaced ChartDataItem with ChartData as it's the correct type for the data prop.
+import { ChartData, ChartType, ChartConfig } from '../types';
 import { generateAnalysis } from '../services/geminiService';
 import { SparklesIcon, CopyIcon, CheckIcon } from './Icons';
 
 interface DatasetDisplayProps {
-  data: ChartDataItem[];
+  data: ChartData;
   config: ChartConfig;
   type: ChartType;
   onReset: () => void;

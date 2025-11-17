@@ -49,3 +49,13 @@ export const CheckIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
         <path d="M20 6 9 17l-5-5"/>
     </svg>
 );
+
+export const ScatterPlotIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <path d="M3 3v18h18" />
+      <circle cx="8" cy="14" r="2" fill="currentColor" stroke="none" />
+      <circle cx="12" cy="10" r="2" fill="currentColor" stroke="none" />
+      <circle cx="15" cy="15" r="2" fill="currentColor" stroke="none" />
+      <circle cx="18" cy="8" r="2" fill="currentColor" stroke="none" />
+    </svg>
+);

@@ -1,22 +1,18 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { ChartDataItem, ChartType } from '../types';
+import { ChartData, ChartType, ChartConfig, BarChartConfig, ScatterPlotConfig } from '../types';
 import { ArrowLeftIcon } from './Icons';
-import { ChartVibe } from '../lib/ChartVibe';
+import { BarChartVibe, ScatterPlotVibe } from '../lib/ChartVibe';
 
 interface ChartBuilderProps {
-  labels: string[];
-  maxValue: number;
+  config: ChartConfig;
   type: ChartType;
-  totalSumLimit?: number;
-  xAxisLabel: string;
-  yAxisLabel: string;
-  onComplete: (data: ChartDataItem[]) => void;
+  onComplete: (data: ChartData) => void;
   onBack: () => void;
 }
 
-const ChartBuilder: React.FC<ChartBuilderProps> = ({ labels, maxValue, type, totalSumLimit, xAxisLabel, yAxisLabel, onComplete, onBack }) => {
-  const chartRef = useRef<ChartVibe | null>(null);
+const ChartBuilder: React.FC<ChartBuilderProps> = ({ config, type, onComplete, onBack }) => {
+  const chartRef = useRef<BarChartVibe | ScatterPlotVibe | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentSum, setCurrentSum] = useState(0);
 
@@ -27,14 +23,10 @@ const ChartBuilder: React.FC<ChartBuilderProps> = ({ labels, maxValue, type, tot
       if (containerRef.current) {
         const { clientWidth } = containerRef.current;
         const newWidth = Math.max(clientWidth, 300);
-        setDimensions({ width: newWidth, height: newWidth * 0.625 });
+        setDimensions({ width: newWidth, height: newWidth * 0.75 });
       }
     };
-
-    // Set initial dimensions
-    // A timeout is used to ensure the container has rendered and has a width.
     const timeoutId = setTimeout(updateDimensions, 0);
-
     window.addEventListener('resize', updateDimensions);
     return () => {
         clearTimeout(timeoutId);
@@ -45,31 +37,39 @@ const ChartBuilder: React.FC<ChartBuilderProps> = ({ labels, maxValue, type, tot
   useEffect(() => {
     if (!containerRef.current || dimensions.width === 0) return;
 
-    // Cleanup previous instance
     chartRef.current?.destroy();
     while (containerRef.current.firstChild) {
         containerRef.current.removeChild(containerRef.current.firstChild);
     }
 
-    const chart = new ChartVibe({
-        labels,
-        maxValue,
-        type,
-        totalSumLimit,
-        xAxisLabel,
-        yAxisLabel,
-        width: dimensions.width,
-        height: dimensions.height,
-        onSumUpdate: setCurrentSum,
-    });
+    let chart: BarChartVibe | ScatterPlotVibe;
 
+    if (type === ChartType.VERTICAL || type === ChartType.HORIZONTAL) {
+        const barConfig = config as BarChartConfig;
+        chart = new BarChartVibe({
+            ...barConfig,
+            type,
+            width: dimensions.width,
+            height: dimensions.height,
+            onSumUpdate: setCurrentSum,
+        });
+    } else if (type === ChartType.SCATTER) {
+        chart = new ScatterPlotVibe({
+            config: config as ScatterPlotConfig,
+            width: dimensions.width,
+            height: dimensions.height,
+        });
+    } else {
+      return;
+    }
+    
     containerRef.current.appendChild(chart.getSvgNode());
     chartRef.current = chart;
 
     return () => {
         chart.destroy();
     };
-  }, [labels, maxValue, type, totalSumLimit, xAxisLabel, yAxisLabel, dimensions]);
+  }, [config, type, dimensions]);
 
   const handleComplete = useCallback(() => {
     if (chartRef.current) {
@@ -77,18 +77,23 @@ const ChartBuilder: React.FC<ChartBuilderProps> = ({ labels, maxValue, type, tot
     }
   }, [onComplete]);
 
+  const isBarChart = type === ChartType.VERTICAL || type === ChartType.HORIZONTAL;
+  const { totalSumLimit } = (isBarChart ? config : {}) as BarChartConfig;
+  const title = isBarChart ? "Draw Your Chart" : "Plot Your Data";
+  const instruction = isBarChart ? "Click and drag on a category to draw the bar." : "Click on the canvas to add a data point.";
+
   return (
     <div className="w-full max-w-5xl flex flex-col items-center p-4">
       <div className="w-full flex justify-between items-center mb-4">
         <button onClick={onBack} className="flex items-center gap-2 text-gray-300 hover:text-[#fdfdfd] transition-colors">
           <ArrowLeftIcon className="w-5 h-5" /> Back
         </button>
-        <h2 className="text-xl font-bold text-center text-[#fdfdfd]">Draw Your Chart</h2>
+        <h2 className="text-xl font-bold text-center text-[#fdfdfd]">{title}</h2>
         <div className="w-24"></div>
       </div>
       <div className="w-full text-center mb-4">
-        <p className="text-gray-300 mb-2">Click and drag on a category to draw the bar.</p>
-        {typeof totalSumLimit === 'number' && (
+        <p className="text-gray-300 mb-2">{instruction}</p>
+        {isBarChart && typeof totalSumLimit === 'number' && (
           <div className="bg-[#fdfdfd]/10 inline-block px-4 py-1 rounded-full text-lg">
             <span className={`font-bold ${currentSum > totalSumLimit ? 'text-red-400' : 'text-[#fdfdfd]'}`}>{currentSum.toLocaleString()}</span>
             <span className="text-gray-300"> / {totalSumLimit.toLocaleString()}</span>
