@@ -2,14 +2,15 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ChartData, ChartType } from '../types';
 
-const API_KEY = process.env.API_KEY;
-
-if (!API_KEY) {
-  // A check to ensure the API key is available, though the environment should provide it.
-  console.warn("Gemini API key not found in environment variables.");
-}
+const API_KEY = (import.meta.env as any).VITE_GEMINI_API_KEY || (import.meta.env as any).VITE_API_KEY || "";
 
 const ai = new GoogleGenAI({ apiKey: API_KEY! });
+
+if (!API_KEY) {
+
+  console.warn("Gemini API key not found. Set VITE_GEMINI_API_KEY in your .env.local for local development.");
+
+}
 
 const analysisSchema = {
   type: Type.OBJECT,
