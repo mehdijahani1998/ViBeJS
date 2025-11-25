@@ -21,7 +21,7 @@ const analysisSchema = {
     },
     description: {
       type: Type.STRING,
-      description: "A one-paragraph summary or analysis of what this data could represent, as if for a business report.",
+      description: "A 120 words summary or analysis of what this data could represent, as if for a curious user who wants to critically evaluate their beliefs.",
     },
   },
   required: ['title', 'description'],
@@ -38,7 +38,9 @@ export const generateAnalysis = async (data: ChartData, type: ChartType) => {
     The dataset JSON below includes the axis labels ('xAxisLabel' and 'yAxisLabel') and the data points. 
     The X-axis represents "${data.xAxisLabel}" and the Y-axis represents "${data.yAxisLabel}".
     
-    Please generate a suitable title and a business-style description of the patterns found in this data.
+    Please generate a suitable title and a story describing of the patterns found in this data. This dataset contains what the user believe about a phenomenon. 
+    Describe how the world around them would be if the data in the dataset was true in the real world. Give a sensible example to illustrate the analysis and show 
+    the contrast between current norms and the implications of this data.
 
     Dataset:
     ${JSON.stringify(data, null, 2)}`;
