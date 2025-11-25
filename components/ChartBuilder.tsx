@@ -1,8 +1,8 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { ChartData, ChartType, ChartConfig, BarChartConfig, ScatterPlotConfig } from '../types';
+import { ChartData, ChartType, ChartConfig, BarChartConfig, ScatterPlotConfig, ChartDataPoints } from '../types';
 import { ArrowLeftIcon } from './Icons';
-import { BarChartVibe, ScatterPlotVibe } from '../lib/ChartVibe';
+import { BarChartVibe, ScatterPlotVibe, BaseChart } from '../lib/ChartVibe';
 
 interface ChartBuilderProps {
   config: ChartConfig;
@@ -12,7 +12,8 @@ interface ChartBuilderProps {
 }
 
 const ChartBuilder: React.FC<ChartBuilderProps> = ({ config, type, onComplete, onBack }) => {
-  const chartRef = useRef<BarChartVibe | ScatterPlotVibe | null>(null);
+  // Polymorphism: The ref can hold any class extending BaseChart
+  const chartRef = useRef<BaseChart | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [currentSum, setCurrentSum] = useState(0);
 
@@ -42,7 +43,7 @@ const ChartBuilder: React.FC<ChartBuilderProps> = ({ config, type, onComplete, o
         containerRef.current.removeChild(containerRef.current.firstChild);
     }
 
-    let chart: BarChartVibe | ScatterPlotVibe;
+    let chart: BaseChart;
 
     if (type === ChartType.VERTICAL || type === ChartType.HORIZONTAL) {
         const barConfig = config as BarChartConfig;
@@ -73,9 +74,23 @@ const ChartBuilder: React.FC<ChartBuilderProps> = ({ config, type, onComplete, o
 
   const handleComplete = useCallback(() => {
     if (chartRef.current) {
-      onComplete(chartRef.current.getData());
+      const points: ChartDataPoints = chartRef.current.getData();
+      let xAxisLabel = '';
+      let yAxisLabel = '';
+
+      if (type === ChartType.VERTICAL || type === ChartType.HORIZONTAL) {
+        const barConfig = config as BarChartConfig;
+        xAxisLabel = barConfig.xAxisLabel;
+        yAxisLabel = barConfig.yAxisLabel;
+      } else if (type === ChartType.SCATTER) {
+        const scatterConfig = config as ScatterPlotConfig;
+        xAxisLabel = scatterConfig.xAxis.label;
+        yAxisLabel = scatterConfig.yAxis.label;
+      }
+      
+      onComplete({ points, xAxisLabel, yAxisLabel });
     }
-  }, [onComplete]);
+  }, [onComplete, config, type]);
 
   const isBarChart = type === ChartType.VERTICAL || type === ChartType.HORIZONTAL;
   const { totalSumLimit } = (isBarChart ? config : {}) as BarChartConfig;

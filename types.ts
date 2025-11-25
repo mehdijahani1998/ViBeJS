@@ -47,4 +47,13 @@ export interface ScatterPlotConfig {
 
 // Union types
 export type ChartConfig = BarChartConfig | ScatterPlotConfig;
-export type ChartData = BarChartDataItem[] | ScatterPlotDataItem[];
+
+// Represents the raw data points from the chart interaction
+export type ChartDataPoints = BarChartDataItem[] | ScatterPlotDataItem[];
+
+// Represents the complete dataset payload including metadata for analysis and display
+export interface ChartData {
+  points: ChartDataPoints;
+  xAxisLabel: string;
+  yAxisLabel: string;
+}

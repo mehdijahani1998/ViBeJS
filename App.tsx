@@ -4,7 +4,6 @@ import Welcome from './components/Welcome';
 import ConfigForm from './components/ConfigForm';
 import ChartBuilder from './components/ChartBuilder';
 import DatasetDisplay from './components/DatasetDisplay';
-// FIX: Removed unused imports to resolve the module export error.
 import { ChartType, ChartConfig, ChartData } from './types';
 import { GithubIcon } from './components/Icons';
 

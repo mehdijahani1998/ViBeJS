@@ -1,9 +1,9 @@
 
 import React, { useState, useCallback } from 'react';
-// FIX: Replaced ChartDataItem with ChartData as it's the correct type for the data prop.
 import { ChartData, ChartType, ChartConfig } from '../types';
 import { generateAnalysis } from '../services/geminiService';
-import { SparklesIcon, CopyIcon, CheckIcon } from './Icons';
+import { SparklesIcon, CopyIcon, CheckIcon, DownloadIcon } from './Icons';
+import { CsvExporter, JsonExporter } from '../lib/DataExporter';
 
 interface DatasetDisplayProps {
   data: ChartData;
@@ -29,24 +29,44 @@ const DatasetDisplay: React.FC<DatasetDisplayProps> = ({ data, type, onReset }) 
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const handleExportCsv = () => {
+    const exporter = new CsvExporter();
+    exporter.save(data);
+  };
+
+  const handleExportJson = () => {
+    const exporter = new JsonExporter();
+    exporter.save(data);
+  };
   
   const dataString = JSON.stringify(data, null, 2);
 
   return (
     <div className="w-full max-w-4xl p-4">
         <h2 className="text-3xl font-bold text-center mb-4 text-[#fdfdfd]">Your Generated Dataset</h2>
-        <p className="text-center text-gray-300 mb-8">Here is the data from the chart you created. You can also get an AI-powered analysis.</p>
+        <p className="text-center text-gray-300 mb-8">Here is the data from the chart you created. You can export it or get an AI-powered analysis.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="bg-[#fdfdfd]/5 border border-[#fdfdfd]/10 rounded-xl p-6 backdrop-blur-sm">
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-semibold text-[#fdfdfd]">Raw Data (JSON)</h3>
-                    <button onClick={handleCopy} className="text-gray-300 hover:text-[#fdfdfd] transition-colors">
-                        {copied ? <CheckIcon className="w-5 h-5 text-green-400" /> : <CopyIcon className="w-5 h-5" />}
-                    </button>
+                    <h3 className="text-xl font-semibold text-[#fdfdfd]">Raw Data</h3>
+                    <div className="flex gap-2">
+                        <button onClick={handleCopy} className="text-gray-300 hover:text-[#fdfdfd] transition-colors p-1" title="Copy to Clipboard">
+                            {copied ? <CheckIcon className="w-5 h-5 text-green-400" /> : <CopyIcon className="w-5 h-5" />}
+                        </button>
+                    </div>
                 </div>
-                <pre className="bg-black/20 rounded-lg p-4 text-sm text-gray-200 overflow-x-auto h-80">
+                <pre className="bg-black/20 rounded-lg p-4 text-sm text-gray-200 overflow-x-auto h-64 mb-4">
                     <code>{dataString}</code>
                 </pre>
+                <div className="grid grid-cols-2 gap-4">
+                    <button onClick={handleExportJson} className="flex items-center justify-center gap-2 bg-[#fdfdfd]/10 hover:bg-[#fdfdfd]/20 text-[#fdfdfd] py-2 rounded-lg transition-colors text-sm font-semibold">
+                        <DownloadIcon className="w-4 h-4" /> Export JSON
+                    </button>
+                    <button onClick={handleExportCsv} className="flex items-center justify-center gap-2 bg-[#fdfdfd]/10 hover:bg-[#fdfdfd]/20 text-[#fdfdfd] py-2 rounded-lg transition-colors text-sm font-semibold">
+                        <DownloadIcon className="w-4 h-4" /> Export CSV
+                    </button>
+                </div>
             </div>
             <div className="bg-[#fdfdfd]/5 border border-[#fdfdfd]/10 rounded-xl p-6 flex flex-col backdrop-blur-sm">
                 <h3 className="text-xl font-semibold mb-4 text-[#fdfdfd]">AI Analysis</h3>

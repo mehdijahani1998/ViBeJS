@@ -1,9 +1,8 @@
 
 import * as d3 from 'd3';
-import { BarChartDataItem, ChartType, ScatterPlotDataItem, ScatterPlotConfig } from '../types';
+import { BarChartDataItem, ChartType, ScatterPlotDataItem, ScatterPlotConfig, ChartDataPoints } from '../types';
 
-// FIX: Removed d3 module augmentation to prevent "module 'd3' cannot be found" error.
-// The custom attr_all function has been replaced with standard d3 methods.
+const margin = { top: 20, right: 30, bottom: 60, left: 70 };
 
 interface BarChartVibeProps {
   labels: string[];
@@ -23,38 +22,77 @@ interface ScatterPlotVibeProps {
     height: number;
 }
 
-const margin = { top: 20, right: 30, bottom: 60, left: 70 };
+// Abstract Base Class (Abstraction & Inheritance)
+export abstract class BaseChart {
+  protected svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
+  protected g: d3.Selection<SVGGElement, unknown, null, undefined>;
+  protected highlightG: d3.Selection<SVGGElement, unknown, null, undefined>;
+  protected width: number;
+  protected height: number;
 
-export class BarChartVibe {
-  private props: BarChartVibeProps;
-  private data: BarChartDataItem[];
-  private svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
-  private g: d3.Selection<SVGGElement, unknown, null, undefined>;
-  private highlightG: d3.Selection<SVGGElement, unknown, null, undefined>;
-  
-  private width: number;
-  private height: number;
-
-  private xScale: d3.ScaleBand<string> | d3.ScaleLinear<number, number>;
-  private yScale: d3.ScaleLinear<number, number> | d3.ScaleBand<string>;
-
-  private activeDragLabel: string | null = null;
-
-  constructor(props: BarChartVibeProps) {
-    this.props = props;
-    this.width = props.width - margin.left - margin.right;
-    this.height = props.height - margin.top - margin.bottom;
-    this.data = this.props.labels.map(label => ({ label, value: 0 }));
-
+  constructor(width: number, height: number) {
+    this.width = width - margin.left - margin.right;
+    this.height = height - margin.top - margin.bottom;
+    
     this.svg = d3.create('svg')
-      .attr('width', props.width)
-      .attr('height', props.height)
+      .attr('width', width)
+      .attr('height', height)
       .style('cursor', 'crosshair')
       .style('user-select', 'none');
 
     this.g = this.svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
-    this.highlightG = this.svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
     
+    // Layer for highlights (z-index below marks usually, or above if semi-transparent)
+    this.highlightG = this.svg.append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`)
+        .style('pointer-events', 'none');
+  }
+
+  public getSvgNode(): SVGSVGElement { return this.svg.node()!; }
+  public destroy(): void { this.svg.remove(); }
+
+  abstract getData(): ChartDataPoints;
+
+  // Overloaded highlight method (Overloading)
+  highlight(index: number): void;
+  highlight(predicate: (d: any) => boolean): void;
+  highlight(): void; // Clear
+  
+  // Implementation of overload
+  highlight(arg?: number | ((d: any) => boolean)): void {
+      this.clearHighlights();
+      if (arg === undefined) return;
+
+      if (typeof arg === 'number') {
+          this.highlightByIndex(arg);
+      } else if (typeof arg === 'function') {
+          this.highlightByPredicate(arg);
+      }
+  }
+
+  // Protected abstract methods for specific highlight implementation (Abstraction)
+  protected abstract clearHighlights(): void;
+  protected abstract highlightByIndex(index: number): void;
+  protected abstract highlightByPredicate(predicate: (d: any) => boolean): void;
+}
+
+// BarChart Implementation
+export class BarChartVibe extends BaseChart {
+  private props: BarChartVibeProps;
+  private data: BarChartDataItem[];
+  private xScale: d3.ScaleBand<string> | d3.ScaleLinear<number, number>;
+  private yScale: d3.ScaleLinear<number, number> | d3.ScaleBand<string>;
+  private activeDragLabel: string | null = null;
+
+  constructor(props: BarChartVibeProps) {
+    super(props.width, props.height);
+    this.props = props;
+    this.data = this.props.labels.map(label => ({ label, value: 0 }));
+    
+    // Initialize scales with dummy types to satisfy TS, setScales will overwrite
+    this.xScale = d3.scaleBand();
+    this.yScale = d3.scaleLinear();
+
     this.setScales();
     this.createAxis();
     this.addMarks();
@@ -118,10 +156,25 @@ export class BarChartVibe {
     }
   }
 
-  private addHighlight(barData: BarChartDataItem | null) {
+  // Highlight Implementations
+  protected clearHighlights(): void {
     this.highlightG.selectAll("rect").remove();
-    if (!barData) return;
+  }
+
+  protected highlightByIndex(index: number): void {
+    if (index >= 0 && index < this.data.length) {
+        this.renderHighlight(this.data[index]);
+    }
+  }
+
+  protected highlightByPredicate(predicate: (d: any) => boolean): void {
+    this.data.filter(predicate).forEach(item => this.renderHighlight(item));
+  }
+
+  private renderHighlight(barData: BarChartDataItem) {
     const { label, value } = barData;
+    // Don't clear previous highlights here if we want to support multiple via predicate
+    // But for simplicity in mouse move we might, handled by 'highlight(arg)' clearing first.
     const rect = this.highlightG.append("rect").attr("class", "fill-[#fdfdfd]/10 pointer-events-none");
 
     if (this.props.type === ChartType.VERTICAL) {
@@ -172,7 +225,7 @@ export class BarChartVibe {
 
   private attachEventListeners(): void {
     this.svg.on('mousedown', (event: MouseEvent) => {
-        this.addHighlight(null);
+        this.clearHighlights();
         const barData = this.getBarDataFromPointer(event);
         if (barData) { this.activeDragLabel = barData.label; this.updateData(barData.label, barData.value); this.updateCursor(); }
     });
@@ -180,10 +233,19 @@ export class BarChartVibe {
         if (this.activeDragLabel) {
             const barData = this.getBarDataFromPointer(event);
             if (barData && barData.label === this.activeDragLabel) { this.updateData(barData.label, barData.value); }
-        } else { this.addHighlight(this.getBarDataFromPointer(event)); }
+        } else { 
+            const hovered = this.getBarDataFromPointer(event);
+            if (hovered) {
+                // Use public overloaded method via internal logic or directly call render
+                this.clearHighlights();
+                this.renderHighlight(hovered);
+            } else {
+                this.clearHighlights();
+            }
+        }
     });
     this.svg.on('mouseup', () => { this.activeDragLabel = null; this.updateCursor(); });
-    this.svg.on('mouseleave', () => { this.activeDragLabel = null; this.addHighlight(null); this.updateCursor(); });
+    this.svg.on('mouseleave', () => { this.activeDragLabel = null; this.clearHighlights(); this.updateCursor(); });
   }
   
   private updateData(label: string, value: number) {
@@ -193,28 +255,23 @@ export class BarChartVibe {
   }
 
   private updateCursor() { this.svg.style('cursor', this.activeDragLabel ? (this.props.type === ChartType.VERTICAL ? 'ns-resize' : 'ew-resize') : 'crosshair'); }
-  public getSvgNode(): SVGSVGElement { return this.svg.node()!; }
   public getData(): BarChartDataItem[] { return this.data; }
-  public destroy(): void { this.svg.remove(); }
 }
 
-export class ScatterPlotVibe {
+// ScatterPlot Implementation
+export class ScatterPlotVibe extends BaseChart {
     private props: ScatterPlotVibeProps;
     private data: ScatterPlotDataItem[] = [];
-    private svg: d3.Selection<SVGSVGElement, unknown, null, undefined>;
-    private g: d3.Selection<SVGGElement, unknown, null, undefined>;
-    private width: number;
-    private height: number;
     private xScale: d3.ScaleLinear<number, number> | d3.ScaleBand<string>;
     private yScale: d3.ScaleLinear<number, number> | d3.ScaleBand<string>;
 
     constructor(props: ScatterPlotVibeProps) {
+        super(props.width, props.height);
         this.props = props;
-        this.width = props.width - margin.left - margin.right;
-        this.height = props.height - margin.top - margin.bottom;
-        this.svg = d3.create('svg').attr('width', props.width).attr('height', props.height).style('cursor', 'crosshair');
-        this.g = this.svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
         
+        this.xScale = d3.scaleLinear();
+        this.yScale = d3.scaleLinear();
+
         this.setScales();
         this.createAxis();
         this.attachEventListeners();
@@ -294,6 +351,31 @@ export class ScatterPlotVibe {
         };
     }
 
+    protected clearHighlights(): void {
+        this.highlightG.selectAll("circle").remove();
+    }
+
+    protected highlightByIndex(index: number): void {
+        if (index >= 0 && index < this.data.length) {
+            this.renderHighlight(this.data[index]);
+        }
+    }
+
+    protected highlightByPredicate(predicate: (d: any) => boolean): void {
+        this.data.filter(predicate).forEach(d => this.renderHighlight(d));
+    }
+
+    private renderHighlight(d: ScatterPlotDataItem) {
+        this.highlightG.append("circle")
+            .attr("cx", this.getXPosition(d.x))
+            .attr("cy", this.getYPosition(d.y))
+            .attr("r", 8)
+            .attr("fill", "#fdfdfd")
+            .attr("fill-opacity", 0.3)
+            .attr("stroke", "#fdfdfd")
+            .attr("stroke-width", 1);
+    }
+
     private attachEventListeners() {
         this.svg.on('click', (event: MouseEvent) => {
             const pointData = this.getDataFromPointer(event);
@@ -304,7 +386,5 @@ export class ScatterPlotVibe {
         });
     }
 
-    public getSvgNode(): SVGSVGElement { return this.svg.node()!; }
     public getData(): ScatterPlotDataItem[] { return this.data; }
-    public destroy(): void { this.svg.remove(); }
 }

@@ -1,26 +1,15 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { ChartDataItem, ChartType } from '../types';
+import { ChartData, ChartType } from '../types';
 
-// Read the Gemini API key from Vite environment variables.
-
-
-
-// Vite only exposes env vars prefixed with `VITE_` to the client bundle.
-
-
-// We also check `VITE_API_KEY` as a common alternative.
-
-
-const API_KEY = (import.meta.env as any).VITE_GEMINI_API_KEY || (import.meta.env as any).VITE_API_KEY || "";
-
-const ai = new GoogleGenAI({ apiKey: API_KEY! });
+const API_KEY = process.env.API_KEY;
 
 if (!API_KEY) {
-
-  console.warn("Gemini API key not found. Set VITE_GEMINI_API_KEY in your .env.local for local development.");
-
+  // A check to ensure the API key is available, though the environment should provide it.
+  console.warn("Gemini API key not found in environment variables.");
 }
+
+const ai = new GoogleGenAI({ apiKey: API_KEY! });
 
 const analysisSchema = {
   type: Type.OBJECT,
@@ -37,14 +26,22 @@ const analysisSchema = {
   required: ['title', 'description'],
 };
 
-export const generateAnalysis = async (data: ChartDataItem[], type: ChartType) => {
+export const generateAnalysis = async (data: ChartData, type: ChartType) => {
   try {
-    const prompt = `
-      Analyze the following dataset for a ${type} bar chart and generate a suitable title and description.
-      The data represents user-drawn values for a set of labels.
-      Dataset:
-      ${JSON.stringify(data, null, 2)}
-    `;
+    const isScatter = type === ChartType.SCATTER;
+    
+    // We now stringify the entire 'data' object, which includes 'points', 'xAxisLabel', and 'yAxisLabel'.
+    // This provides the AI with the axis names directly inside the JSON structure.
+    const prompt = `Analyze the following dataset for a ${isScatter ? 'Scatter Plot' : type + ' Bar Chart'}. 
+    
+    The dataset JSON below includes the axis labels ('xAxisLabel' and 'yAxisLabel') and the data points. 
+    The X-axis represents "${data.xAxisLabel}" and the Y-axis represents "${data.yAxisLabel}".
+    
+    Please generate a suitable title and a business-style description of the patterns found in this data.
+
+    Dataset:
+    ${JSON.stringify(data, null, 2)}`;
+
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
