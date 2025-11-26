@@ -78,7 +78,7 @@ const DatasetDisplay: React.FC<DatasetDisplayProps> = ({ data, type, onReset }) 
                 ) : (
                     <div className="flex-grow flex flex-col items-center justify-center text-center text-gray-300">
                         <SparklesIcon className="w-12 h-12 mb-4"/>
-                        <p>Click the button below to generate a title and description for your data using Gemini.</p>
+                        <p>Click the button below to generate an AI analysis on how the world would look like if the dataset you've created is true.</p>
                     </div>
                 )}
                 <button 
